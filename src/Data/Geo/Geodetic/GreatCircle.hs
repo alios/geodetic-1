@@ -3,8 +3,11 @@
 -- | Great circle geodetic distance algorithm.
 module Data.Geo.Geodetic.GreatCircle(
   sphericalLaw
+, sphericalLawDim
 , sphericalLawD
+, sphericalLawDimD
 , sphericalLaw'
+, sphericalLawDim'
 ) where
 
 import Control.Applicative(Const)
@@ -13,6 +16,7 @@ import Data.Geo.Coordinate(AsCoordinate(_Coordinate), Coordinate, AsLongitude(_L
 import Data.Geo.Geodetic.Sphere(AsSphere(_Sphere), Sphere, earthMean)
 import Prelude(Double, Num((*), (+), (-)), Fractional((/)), pi, sin, cos, acos)
 import System.Args.Optional(Optional1(optional1))
+import Numeric.Units.Dimensional.TF.Prelude (meter, (*~), Length)
 
 -- $setup
 -- >>> import Prelude(Functor(fmap), Monad(return), String)
@@ -49,6 +53,15 @@ sphericalLaw s start' end' =
       lon2 = toRadians (_Longitude # (end ^. _Longitude))
   in acos (sin lat1 * sin lat2 + cos lat1 * cos lat2 * cos (lon2 - lon1)) * _Sphere # s
 
+sphericalLawDim ::
+  (AsCoordinate (->) (Const Coordinate) start, AsCoordinate (->) (Const Coordinate) end) =>
+  Sphere -- ^ reference sphere
+  -> start -- ^ start coordinate
+  -> end -- ^ end coordinate
+  -> Length Double
+sphericalLawDim s start' end' = (sphericalLaw s start' end') *~ meter
+
+
 -- | Great circle spherical law algorithm with a default sphere of the earth mean.
 --
 -- >>> fmap (printf "%0.4f") (do fr <- 27.812 <°> 154.295; to <- (-66.093) <°> 12.84; return (sphericalLawD fr to)) :: Maybe String
@@ -63,6 +76,14 @@ sphericalLawD ::
   -> Double
 sphericalLawD =
   sphericalLaw earthMean
+
+sphericalLawDimD ::
+  (AsCoordinate (->) (Const Coordinate) start, AsCoordinate (->) (Const Coordinate) end) =>
+  start -- ^ start coordinate
+  -> end -- ^ end coordinate
+  -> Length Double
+sphericalLawDimD =
+  sphericalLawDim earthMean
 
 -- | Great circle spherical law algorithm with an optionally applied default sphere of the earth mean.
 --
@@ -82,3 +103,15 @@ sphericalLaw' ::
     x
 sphericalLaw' =
   optional1 (sphericalLaw :: Sphere -> Coordinate -> Coordinate -> Double) earthMean
+
+sphericalLawDim' ::
+  (Optional1
+    Sphere
+    (
+      Coordinate
+      -> Coordinate
+      -> Length Double
+    ) x) =>
+    x
+sphericalLawDim' =
+  optional1 (sphericalLawDim :: Sphere -> Coordinate -> Coordinate -> Length Double) earthMean
