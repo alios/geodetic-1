@@ -5,8 +5,11 @@
 -- | Haversine geodetic distance algorithm.
 module Data.Geo.Geodetic.Haversine(
   haversine
+, haversineDim
 , haversineD
+, haversineDimD
 , haversine'
+, haversineDim'
 ) where
 
 import Control.Applicative(Const)
@@ -16,6 +19,7 @@ import System.Args.Optional(Optional1(optional1))
 import Data.Geo.Coordinate(AsCoordinate(_Coordinate), Coordinate, AsLongitude(_Longitude), AsLatitude(_Latitude))
 import Data.Geo.Geodetic.Sphere(AsSphere(_Sphere), Sphere, earthMean)
 import Prelude(Double, Num((*), (-), (+)), Fractional((/)), pi, sin, atan2, cos, sqrt)
+import Numeric.Units.Dimensional.TF.Prelude (meter, (*~), Length)
 
 -- $setup
 -- >>> import Prelude(Functor(..), Monad(..), String, Double)
@@ -56,6 +60,15 @@ haversine s start' end' =
       c = 2 * atan2 (sqrt a) (sqrt (1 - a))
   in (_Sphere # s) * c
 
+haversineDim ::
+  (AsCoordinate (->) (Const Coordinate) start, AsCoordinate (->) (Const Coordinate) end) =>
+  Sphere -- ^ reference sphere
+  -> start -- ^ start coordinate
+  -> end -- ^ end coordinate
+  -> Length Double
+haversineDim s start' end' = (haversine s start' end') *~ meter
+
+
 -- | Haversine algorithm with a default sphere of the earth mean.
 --
 -- >>> fmap (printf "%0.4f") (do fr <- 27.812 <°> 154.295; to <- (-66.093) <°> 12.84; return (haversineD fr to)) :: Maybe String
@@ -70,6 +83,14 @@ haversineD ::
   -> Double
 haversineD =
   haversine earthMean
+
+haversineDimD ::
+  (AsCoordinate (->) (Const Coordinate) start, AsCoordinate (->) (Const Coordinate) end) =>
+  start -- ^ start coordinate
+  -> end -- ^ end coordinate
+  -> Length Double
+haversineDimD =
+  haversineDim earthMean
 
 -- | Haversine algorithm with an optionally applied default sphere of the earth mean.
 --
@@ -89,3 +110,15 @@ haversine' ::
     x
 haversine' =
   optional1 (haversine :: Sphere -> Coordinate -> Coordinate -> Double) earthMean
+
+haversineDim' ::
+  (Optional1
+    Sphere
+    (
+      Coordinate
+      -> Coordinate
+      -> Length Double
+    ) x) =>
+    x
+haversineDim' =
+  optional1 (haversineDim :: Sphere -> Coordinate -> Coordinate -> Length Double) earthMean
