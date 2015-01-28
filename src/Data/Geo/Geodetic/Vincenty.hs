@@ -38,7 +38,7 @@ import Data.Geo.Geodetic.Curve(Curve, curve)
 import Data.Radian(toRadians)
 import Prelude(Show(show), Num((*), (+), (-), abs), Floating((**)), Fractional(..), Double, subtract, cos, sin, asin, tan, sqrt, atan, atan2, pi, ($!), error)
 import System.Args.Optional(Optional2(optional2))
-import Numeric.Units.Dimensional.TF.Prelude (meter, (*~), (/~), Length)
+import Numeric.Units.Dimensional.TF.Prelude (meter, (/~), Length)
 
 -- $setup
 -- >>> import Control.Monad(Monad(return))
