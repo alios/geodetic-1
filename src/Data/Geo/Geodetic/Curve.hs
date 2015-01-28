@@ -7,7 +7,9 @@ module Data.Geo.Geodetic.Curve(
   Curve
 , AsCurve(..)
 , curve
+, curveDim
 , curveDistance
+, curveDistanceDim
 , curveAzimuth
 , curveReverseAzimuth
 ) where
@@ -21,6 +23,7 @@ import Data.Ord(Ord((>)))
 import Data.Geo.Geodetic.Azimuth
 import Text.Printf(printf)
 import Prelude(Show(show, showsPrec), Double, showString, showParen)
+import Numeric.Units.Dimensional.TF.Prelude (meter, (*~), (/~), Length)
 
 data Curve =
   Curve
@@ -44,10 +47,18 @@ curve ::
 curve =
   Curve
 
+curveDim :: Length Double -> Azimuth -> Azimuth -> Curve
+curveDim l = curve (l /~ meter)
+
 curveDistance ::
   Lens' Curve Double
 curveDistance =
   lens (\(Curve d _ _) -> d) (\(Curve _ a r) d -> Curve d a r)
+
+curveDistanceDim ::
+  Lens' Curve (Length Double)
+curveDistanceDim =
+  lens (\(Curve d _ _) -> d *~ meter) (\(Curve _ a r) d -> Curve (d /~ meter) a r)
 
 curveAzimuth ::
   Lens' Curve Azimuth
@@ -72,3 +83,10 @@ instance (Profunctor p, Functor f) => AsCurve p f (Double, Azimuth, Azimuth) whe
     iso
       (\(d, a, r) -> Curve d a r)
       (\(Curve d a r) -> (d, a, r))
+
+instance (Profunctor p, Functor f) => AsCurve p f (Length Double, Azimuth, Azimuth) where
+  _Curve =
+    iso
+      (\(d, a, r) -> Curve (d /~ meter) a r)
+      (\(Curve d a r) -> (d *~ meter, a, r))
+
