@@ -16,10 +16,12 @@ import Data.Eq(Eq)
 import Data.List((++))
 import Data.Maybe(Maybe(Just, Nothing))
 import Data.Ord(Ord((>), (>=), (<)))
-import Control.Lens(Choice, Optic', prism')
+import Control.Lens(Choice, Optic', prism', (^?))
 import Data.Fixed(mod')
 import Prelude(Double, Show(showsPrec), showParen, showString)
 import Text.Printf(printf)
+import qualified Numeric.Units.Dimensional.TF.Prelude as Dim
+import Numeric.Units.Dimensional.TF.Prelude (PlaneAngle)
 
 -- $setup
 -- >>> import Control.Lens((#), (^?))
@@ -87,3 +89,9 @@ instance (Choice p, Applicative f) => AsAzimuth p f Double where
     prism'
       (\(Azimuth i) -> i)
       (\i -> bool Nothing (Just (Azimuth i)) (i >= 0 && i < 360))
+
+instance (Choice p, Applicative f) => AsAzimuth p f (PlaneAngle Double) where
+  _Azimuth =
+    prism'
+      (\(Azimuth i) -> i Dim.*~ Dim.degree)
+      (\i -> (i Dim./~ Dim.degree) ^? _Azimuth)

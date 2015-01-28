@@ -10,7 +10,7 @@ module Data.Geo.Geodetic.Bearing(
 
 import Control.Applicative(Applicative)
 import Control.Category(Category(id))
-import Control.Lens(Choice, Optic', prism')
+import Control.Lens(Choice, Optic', prism', (^?))
 import Data.Bool(bool, (&&))
 import Data.Eq(Eq)
 import Data.Fixed(mod')
@@ -19,6 +19,8 @@ import Data.Maybe(Maybe(Nothing, Just))
 import Data.Ord(Ord((>), (>=), (<)))
 import Prelude(Double, Show(showsPrec), showString, showParen)
 import Text.Printf(printf)
+import qualified Numeric.Units.Dimensional.TF.Prelude as Dim
+import Numeric.Units.Dimensional.TF.Prelude (PlaneAngle)
 
 -- $setup
 -- >>> import Control.Lens((#), (^?))
@@ -93,4 +95,10 @@ instance (Choice p, Applicative f) => AsBearing p f Double where
     prism'
       (\(Bearing i) -> i)
       (\i -> bool Nothing (Just (Bearing i)) (i >= 0 && i < 360))
+
+instance (Choice p, Applicative f) => AsBearing p f (PlaneAngle Double) where
+  _Bearing =
+    prism'
+      (\(Bearing i) -> i Dim.*~ Dim.degree)
+      (\i -> (i Dim./~ Dim.degree) ^? _Bearing)
 
