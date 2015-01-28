@@ -10,6 +10,9 @@ module Data.Geo.Geodetic.Vincenty {-(
 , direct
 , directD
 , direct'
+, directDim
+, directDimD
+, directDim'
 , VincentyDirectResult
 , inverse
 , inverseD
@@ -35,6 +38,7 @@ import Data.Geo.Geodetic.Curve(Curve, curve)
 import Data.Radian(toRadians)
 import Prelude(Show(show), Num((*), (+), (-), abs), Floating((**)), Fractional(..), Double, subtract, cos, sin, asin, tan, sqrt, atan, atan2, pi, ($!), error)
 import System.Args.Optional(Optional2(optional2))
+import Numeric.Units.Dimensional.TF.Prelude (meter, (*~), (/~), Length)
 
 -- $setup
 -- >>> import Control.Monad(Monad(return))
@@ -152,6 +156,16 @@ direct e' conv start' bear' dist =
          in fromMaybe (error ("Invariant not met. Bearing in radians not within range " ++ show r)) (r ^? toRadians . _Bearing)
        )
 
+directDim ::
+  (AsCoordinate (->) (Const Coordinate) c, AsBearing (->) (Const Bearing) b, AsEllipsoid (->) (Const Ellipsoid) e) =>
+  e -- ^ reference ellipsoid
+  -> Convergence -- ^ convergence point to stop calculating
+  -> c -- ^ begin coordinate
+  -> b -- ^ bearing
+  -> Length Double -- ^ distance
+  -> VincentyDirectResult
+directDim e conv start bear d = direct e conv start bear (d /~ meter)
+
 -- | Vincenty direct algorithm with a default ellipsoid of WGS84 and standard convergence.
 --
 -- >>> fmap (\c' -> directD c' (modBearing 165.34) 4235) (27.812 <°> 154.295)
@@ -167,6 +181,14 @@ directD ::
   -> VincentyDirectResult
 directD =
   direct wgs84 convergence
+directDimD ::
+  (AsCoordinate (->) (Const Coordinate) c, AsBearing (->) (Const Bearing) b) =>
+  c -- ^ begin coordinate
+  -> b -- ^ bearing
+  -> Length Double -- ^ distance
+  -> VincentyDirectResult
+directDimD =
+  directDim wgs84 convergence
 
 -- | Vincenty direct algorithm with an optionally applied default ellipsoid of WGS84 and standard convergence.
 --
@@ -188,6 +210,20 @@ direct' ::
     x
 direct' =
   optional2 (direct :: Ellipsoid -> Convergence -> Coordinate -> Bearing -> Double -> VincentyDirectResult) wgs84 convergence
+
+directDim' ::
+  (Optional2
+    Ellipsoid
+    Convergence
+    (
+      Coordinate
+      -> Bearing
+      -> Length Double
+      -> VincentyDirectResult
+    ) x) =>
+    x
+directDim' =
+  optional2 (directDim :: Ellipsoid -> Convergence -> Coordinate -> Bearing -> Length Double -> VincentyDirectResult) wgs84 convergence
 
 -- | Vincenty inverse algorithm.
 --
